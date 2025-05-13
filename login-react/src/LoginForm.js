@@ -1,41 +1,46 @@
 import React, { useState } from "react";
-import RegisterLink from "./RegisterLink"; // bovenaan toevoegen
-import axios from "axios";
+import { Link } from "react-router-dom";
 
 function LoginForm() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (!username || !password) {
-      setMessage("Vul alstublieft alle velden in.");
-      return;
-    }
+    setLoading(true);
+    setMessage("");
 
     try {
-      const res = await axios.post("http://localhost/Gezondheidapplicatie_project4/backend/login.php", {
-        username,
-        password
+      const response = await fetch("http://145.93.49.113:5000/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
       });
 
-      if (res.data.success) {
-        setMessage("Goed" + res.data.message);
+      if (response.ok) {
+        const data = await response.json();
+        console.log("Succesvol ingelogd:", data);
+        localStorage.setItem("token", data.token);
+        setMessage("Inloggen geslaagd!");
+        // dashboard
       } else {
-        setMessage("fout" + res.data.message);
+        const errorData = await response.json();
+        console.error("Fout bij inloggen:", errorData);
+        setMessage(errorData.message || "Inloggen mislukt");
       }
     } catch (error) {
-      console.error("Login error:", error);
-      setMessage("Serverfout");
+      console.error("Netwerkfout:", error);
+      setMessage("Server niet bereikbaar. Probeer opnieuw.", error);
     }
+
+    setLoading(false);
   };
 
   return (
-    <div className="d-flex justify-content-center align-items-center vh-100 bg-light">
+    <div className="bg-light min-vh-100 d-flex flex-column justify-content-center align-items-center py-5">
       <div className="card shadow p-4 text-center" style={{ minWidth: "350px" }}>
-        {/* Logo */}
         <img
           src="/vitech_logo.png"
           alt="Vitech logo"
@@ -68,17 +73,22 @@ function LoginForm() {
             />
           </div>
 
-          <button type="submit" className="btn btn-danger w-100">Login</button>
+          <button type="submit" className="btn btn-danger w-100" disabled={loading}>
+            {loading ? "Even geduld..." : "Login"}
+          </button>
         </form>
 
         {message && <p className="mt-3 text-danger">{message}</p>}
-        </div>    
-        {message && <p className="mt-3 text-danger">{message}</p>}
+      </div>
 
-{/* Nieuwe component hier tonen */}
-<RegisterLink />
-      
-
+      <div className="mt-4 text-center">
+        <p>
+          Heb je nog geen account?
+          <Link to="/register" className="ms-2 text-primary fw-bold">
+            Maak een nieuwe account aan!!
+          </Link>
+        </p>
+      </div>
     </div>
   );
 }
